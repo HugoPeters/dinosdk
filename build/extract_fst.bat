@@ -10,5 +10,5 @@ SET defs=%cd%\DLLSIMPORTTAB.def
 mkdir %fst%
 
 Pushd %bindir%
-CALL dpfst.exe -extract_files -rom %rom% -o %fst% -defs %defs%
+CALL dinofst.exe -extract_files -rom %rom% -o %fst% -defs %defs%
 popd

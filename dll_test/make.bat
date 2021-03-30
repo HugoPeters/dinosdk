@@ -31,6 +31,6 @@ CALL %gcc% %cargs% %linkargs% %outdir%\hello.o -o %elf%
 popd
 
 pushd %bindir%
-CALL dpfst.exe -elf2dll -i "%elf%" -o "%dll%" -defs "%importdef%"
-CALL dpfst.exe -compile_rom -rom "%inrom%" -i "%fst%" -o "%outrom%"
+CALL dinofst.exe -elf2dll -i "%elf%" -o "%dll%" -defs "%importdef%"
+CALL dinofst.exe -compile_rom -rom "%inrom%" -i "%fst%" -o "%outrom%"
 popd
