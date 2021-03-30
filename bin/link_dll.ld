@@ -101,8 +101,10 @@ SECTIONS
   PROVIDE (__etext = .);
   PROVIDE (_etext = .);
   PROVIDE (etext = .);
+  /* idk how linker scripts work, but removing the rodata segment from here makes it generate relatively addressed rodata segment
+     that is correctly handled by the GP, instead of it using the base address of the image 
   .rodata         : { *(.rodata .rodata.* .gnu.linkonce.r.*) }
-  .rodata1        : { *(.rodata1) }
+  .rodata1        : { *(.rodata1) } */
   .sdata2         :
   {
     *(.sdata2 .sdata2.* .gnu.linkonce.s2.*)
