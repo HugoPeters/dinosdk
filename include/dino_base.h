@@ -21,11 +21,19 @@ typedef unsigned long	   ulong;
 #define PREVENT_OPTIMIZE __attribute__((used))
 #define DLL_IMPORT __attribute__((weak))
 #define DLL_EXPORT MAKE_VISIBLE PREVENT_OPTIMIZE
+#define va_list __builtin_va_list
+#define va_start __builtin_va_start
+#define va_arg __builtin_va_arg
+#define va_end __builtin_va_end
 #else // mainly to make intellisense play nice
 #define MAKE_VISIBLE
 #define PREVENT_OPTIMIZE
 #define DLL_IMPORT
 #define DLL_EXPORT
+#define va_list void*
+#define va_start
+#define va_arg
+#define va_end
 #endif
 
 typedef enum _PadButton
@@ -70,12 +78,34 @@ typedef struct _vec3i16
     int16 x, y, z;
 } vec3i16;
 
+typedef struct _Object
+{
+    float unk0;     // 0-4
+    float scale;    // 4-8
+    char pad[0x5f-8];
+    char name[16];
+    uint8 classType;
+} Object;
+
 typedef struct _ObjectInstance
 {
-    vec3i16 rot;
-    int16 unk0;
-    float scale;
-    vec3f pos;
+    vec3i16 rot;    // 0-6
+    int16 unk0;     // 6-8
+    float scale;    // 8-12
+    vec3f pos;      // 12-24
+    char padToObjDef[0x50 - 24];
+    Object* objDef;
 } ObjectInstance;
+
+typedef struct _RawControllerState
+{
+    uint32 unk0;
+    uint32 state;
+} RawControllerState;
+
+typedef struct _RawControllerStateArray
+{
+    RawControllerState states[4];
+} RawControllerStateArray;
 
 #endif // _DINO_BASE_H_

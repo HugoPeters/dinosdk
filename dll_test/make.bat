@@ -1,6 +1,5 @@
 @echo OFF
 
-SET srcName=hello.c
 SET dllName=core-015-unk
 SET romName=dino.z64
 
@@ -14,8 +13,12 @@ SET inc=%cd%\..\include
 SET elf=%outdir%\out.elf
 SET fst=%buildir%\fst_work
 SET importdef=%fst%\DLLSIMPORTTAB.def
-SET src=%cd%\%srcName%
+SET srcdir=%cd%
 SET dll=%fst%\DLLS\%dllName%.dll
+
+@REM unfortunately we need -mabi=32 for va_args to work correctly with the game's vsnprintf
+SET cargs=-std=c99 -EB -march=r4300 -mabi=32 -shared -fPIC -mabicalls -O3 -g -nostdlib -G0 -fno-builtin-fprintf -fno-builtin-fvsnprintf -fvisibility=hidden -ffunction-sections -fdata-sections -Wno-endif-labels -mhard-float -I%inc%
+SET linkargs=-Wl,--undefined,dynamic_lookup,--warn-constructors,--section-start=.bss=0x00800000 -T %bindir%\link_dll.ld
 
 SET inrom=%romdir%\%romName%
 SET outrom=%romdir%\out.z64
@@ -23,7 +26,8 @@ SET outrom=%romdir%\out.z64
 if not exist %outdir% mkdir %outdir%
 
 pushd %gccdir%
-CALL %gcc% -std=c99 -EB -march=r4300 -shared -fPIC -mabicalls -O3 -g -nostdlib -lc -G0 -fvisibility=hidden -ffunction-sections -fdata-sections -Wno-endif-labels -mhard-float -I%inc% %src% -o %elf% -Wl,-undefined,dynamic_lookup,--warn-constructors,--section-start=.bss=0x00800000 -T %bindir%\link_dll.ld
+CALL %gcc% %cargs% -c %srcdir%\hello.c -o %outdir%\hello.o
+CALL %gcc% %cargs% %linkargs% %outdir%\hello.o -o %elf%
 popd
 
 pushd %bindir%

@@ -2,6 +2,8 @@
 
 // this is simply a proof of concept, please don't take it too serious
 
+// todo: get rid of libc standard stuff so we dont have to name things "printf2" to avoid warnings
+
 void initDebugMenu();
 void frameHook();
 
@@ -17,7 +19,7 @@ void DLL_EXPORT onUnload(void* aThis)
 {
 }
 
-// these are required as this DLL expects at least3 public functions
+// these are required as this DLL expects at least 3 public functions
 void DLL_EXPORT func1()
 {
 }
@@ -31,20 +33,29 @@ void DLL_EXPORT func3()
 }
 
 // gamepad functionality
+static uint16 gPadButtons[2];
+static int gPadRepeat;
 
-inline bool padIsButtonDown(PadButton button)
+static bool padIsButtonDown(PadButton button)
 {
-	return padGetButtons(0, -1) & button;
+	return gPadButtons[0] & button;
 }
 
-inline bool padIsButtonPressed(PadButton button)
+static bool padIsButtonPressed(PadButton button)
 {
-	return (~padGetButtons(0, 0) & padGetButtons(0, 1)) & button;
+	return (~gPadButtons[1] & gPadButtons[0]) & button;
 }
 
-inline bool padIsButtonReleased(PadButton button)
+static bool padIsButtonPressedRepeat(PadButton button)
 {
-	return (~padGetButtons(0, 1) & padGetButtons(0, 0)) & button;
+	return false
+		|| padIsButtonPressed(button)
+		|| (padIsButtonDown(button) && gPadRepeat == 0);
+}
+
+static bool padIsButtonReleased(PadButton button)
+{
+	return (~gPadButtons[0] & gPadButtons[1]) & button;
 }
 
 // misc game stuff
@@ -72,68 +83,136 @@ inline void logEndLine()
 	logPutChar(0);
 }
 
-void printStr(const char* str)
+uint32 printLogHandler(uint32 maxSize, const char* buff, uint32 length)
 {
-	while (*str)
-	{
-		logPutChar(*str);
-		++str;
-	}
+	for (uint32 i = 0; i < length; ++i)
+		logPutChar(buff[i]);
+	return 1;
 }
 
-void printLine(const char* str)
+void printStr(const char* fmt, ...)
 {
-	printStr(str);
+	va_list vlist;
+	va_start(vlist, fmt);
+	vsnprintf(&printLogHandler, 0, fmt, vlist);
+	va_end(vlist);
+}
+
+void printLine(const char* fmt, ...)
+{
+	va_list vlist;
+	va_start(vlist, fmt);
+	vsnprintf(&printLogHandler, 0, fmt, vlist);
+	va_end(vlist);
 	logEndLine();
+}
+
+void printf2(const char* fmt, ...)
+{
+	va_list vlist;
+	va_start(vlist, fmt);
+	vsnprintf(&printLogHandler, 0, fmt, vlist);
+	va_end(vlist);
+	logPutChar(0x0);
+}
+
+typedef struct _snprintfState 
+{
+	char* buff;
+	uint32 buffLeft;
+} snprintfState;
+
+uint32 snprintfHandler(uint32 statePtr, const char* buff, uint32 length)
+{
+	snprintfState* state =	(snprintfState*)statePtr;
+
+	while (length > 0 && state->buffLeft > 0)
+	{
+		*(state->buff++) = *(buff++);
+		--state->buffLeft;
+		--length;
+	}
+
+	return state->buffLeft > 0 ? (uint32)state : 0;
+}
+
+void snprintf2(char* buff, uint32 buffSize, const char* fmt, ...)
+{
+	if (buffSize == 0)
+		return;
+
+	if (buffSize == 1)
+	{
+		buff[0] = 0;
+		return;
+	}
+
+	snprintfState state;
+	state.buffLeft = buffSize - 1;
+	state.buff = buff;
+	va_list vlist;
+	va_start(vlist, fmt);
+	vsnprintf(&snprintfHandler, (uint32)&state, fmt, vlist);
+	va_end(vlist);
+
+	buff[state.buff - buff] = 0;
 }
 
 // menu
 typedef struct _DebugMenuState
 {
-	int pageId;
+	int curPage;
+	int prevPage;
+	int numPages;
 	int prevGameStateId;
 	bool isAppearing;
+	bool lockPlayer;
 } DebugMenuState;
 
 typedef struct _DebugMenuPageState
 {
 	DebugMenuState* menuState;
+	int curEntry;
+	int numEntries;
+	int maxEntries;
+	int scrollOffset;
 	int selectedOption;
-	int curDrawOption;
-	int numOptions;
 	int nextPage;
 } DebugMenuPageState;
 
 // utils
 void beginMenu(DebugMenuPageState* page)
 {
-	page->curDrawOption = 0;
-	page->nextPage = -1;
+	page->curEntry = 0;
+	page->numEntries = 0;
 }
 
 void endMenu(DebugMenuPageState* page)
 {
-	page->numOptions = page->curDrawOption;
-
-	if (padIsButtonPressed(kButtonDPadUp))
+	if (padIsButtonPressedRepeat(kButtonDPadUp))
 		page->selectedOption--;
-	if (padIsButtonPressed(kButtonDPadDown))
+	if (padIsButtonPressedRepeat(kButtonDPadDown))
 		page->selectedOption++;
 
 	if (page->selectedOption < 0)
-		page->selectedOption = page->numOptions - 1;
-	else if (page->selectedOption >= page->numOptions)
+		page->selectedOption = page->numEntries - 1;
+	else if (page->selectedOption >= page->numEntries)
 		page->selectedOption = 0;
+
+	int maxEntryStart = page->scrollOffset;
+	int maxEntryEnd = maxEntryStart + page->maxEntries;
+
+	if (page->selectedOption > maxEntryEnd)
+		page->scrollOffset = page->selectedOption - page->maxEntries;
+	else if (page->selectedOption < maxEntryStart)
+		page->scrollOffset = page->selectedOption;
 }
 
-bool menuOption(DebugMenuPageState* page, const char* title)
+bool menuSelectable(DebugMenuPageState* page)
 {
-	int thisOption = page->curDrawOption++;
-	bool isSelected = thisOption == page->selectedOption;
+	bool isSelected = page->curEntry == page->selectedOption;
 
-	printStr(isSelected ? ">" : " ");
-	printStr(title);
-	logEndLine();
+	printStr(isSelected ? "> " : "  ");
 
 	bool didSelect = false;
 
@@ -148,38 +227,118 @@ bool menuOption(DebugMenuPageState* page, const char* title)
 	return didSelect;
 }
 
+bool beginMenuEntry(DebugMenuPageState* page)
+{
+	++page->numEntries;
+	page->curEntry = page->numEntries - 1;
+
+	int maxEntryStart = page->scrollOffset;
+	int maxEntryEnd = maxEntryStart + page->maxEntries;
+
+	if (page->curEntry < maxEntryStart
+		|| page->curEntry > maxEntryEnd)
+		return false;
+
+	return true;
+}
+
+bool menuOption(DebugMenuPageState* page, const char* title)
+{
+	if (!beginMenuEntry(page))
+		return false;
+
+	bool selected = menuSelectable(page);
+	printStr(title);
+	logEndLine();
+
+	return selected;
+}
+
+bool menuCheckbox(DebugMenuPageState* page, const char* title, int* isSelected)
+{
+	if (!beginMenuEntry(page))
+		return false;
+
+	bool dotoggle = menuSelectable(page);
+
+	if (dotoggle)
+		*isSelected = !*isSelected;
+
+	printStr("[%c] %s", *isSelected ? 'X' : ' ', title);
+	logEndLine();
+
+	return dotoggle;
+}
+
+void menuTitle(DebugMenuPageState* page, const char* fmt, ...)
+{
+	printStr("<%i/%i>: ", page->menuState->curPage + 1, page->menuState->numPages);
+
+	va_list vlist;
+	va_start(vlist, fmt);
+	vsnprintf(&printLogHandler, 0, fmt, vlist);
+	va_end(vlist);
+
+	logEndLine();
+}
+
 // pages
 typedef enum _DebugMenuPage 
 {
-	kMenuPage_Main = 0,
+	kMenuPage_MainGameplay = 0,
+	kMenuPage_MainObjects,
 
 	kMenuPage_NumMainPages,
 
-	kMenuPage_MovePlayer,
+	kMenuPage_GameplayMovePlayer,
 
 	kMenuPage_NumPages
 } DebugMenuPage;
+
+void doLockPlayerToggle(DebugMenuPageState* page)
+{
+	static int lockPlayer = 1;
+	if (menuCheckbox(page, "lock player", &lockPlayer))
+	{
+		page->menuState->lockPlayer = lockPlayer == 1 ? true : false;
+	}
+}
 
 void doMenuPage_Gameplay(DebugMenuPageState* page)
 {
 	beginMenu(page);
 
+	ObjectInstance* player = getPlayer();
+	menuTitle(page, "gameplay - player: %s", player ? player->objDef->name : "NO PLAYER!");
+
 	if (menuOption(page, "move player"))
 	{
-		page->nextPage = kMenuPage_MovePlayer;
+		page->nextPage = kMenuPage_GameplayMovePlayer;
 	}
+
+	doLockPlayerToggle(page);
 
 	endMenu(page);
 }
 
 void doMenuPage_MovePlayer(DebugMenuPageState* page)
 {
-	if (padIsButtonDown(kButtonB))
-		page->nextPage = kMenuPage_Main;
+	if (padIsButtonPressed(kButtonB))
+		page->nextPage = page->menuState->prevPage;
+		
+	ObjectInstance* obj = getPlayer();
 
 	printLine("MOVE");
 
-	ObjectInstance* obj = getPlayer();
+	if (!obj)
+	{
+		printLine("NO PLAYER!");
+		return;
+	}
+
+	beginMenu(page);
+	doLockPlayerToggle(page);
+	endMenu(page);
 
 	float stick_x = padGetStickX(0, -1) / 70.f;
 	float stick_y = padGetStickY(0, -1) / 70.f;
@@ -193,6 +352,26 @@ void doMenuPage_MovePlayer(DebugMenuPageState* page)
 
 	obj->pos.x += stick_x * 10.f;
 	obj->pos.z += stick_y * 10.f;
+}
+
+void doMenuPage_Objects(DebugMenuPageState* page)
+{
+	int unused, numObjs;
+	ObjectInstance** objectList = getObjectsList(&unused, &numObjs);
+
+	menuTitle(page, "objects (%i)", numObjs);
+
+	beginMenu(page);
+
+	for (int i = 0; i < numObjs; ++i)
+	{
+		static char optionName[32];
+		snprintf2(optionName, sizeof(optionName), "%i: %s", i, objectList[i]->objDef->name);
+
+		menuOption(page, optionName);
+	}
+
+	endMenu(page);
 }
 
 static DebugMenuPageState gMenuPages[kMenuPage_NumPages];
@@ -209,34 +388,92 @@ bool isAnyDPadButtonPressed()
 
 void enterDebugMenu()
 {
-	gMenuState.pageId = kMenuPage_Main;
+	gMenuState.numPages = kMenuPage_NumMainPages;
+	gMenuState.curPage = kMenuPage_MainGameplay;
+	gMenuState.prevPage = -1;
 	gMenuState.prevGameStateId = getGameStateId();
 	gMenuState.isAppearing = true;
+	gMenuState.lockPlayer = true;
 	setGameStateId(kGameStateDebug);
 }
 
 void exitDebugMenu()
 {
-	gMenuState.pageId = -1;
+	gMenuState.curPage = -1;
 	setGameStateId(gMenuState.prevGameStateId);
 }
 
 void initDebugMenu()
 {
+	gPadButtons[0] = 0;
+	gPadButtons[1] = 0;
+	
 	gMenuState.prevGameStateId = -1;
-	gMenuState.pageId = -1;
+	gMenuState.curPage = -1;
+	gMenuState.lockPlayer = true;
 
 	for (int i = 0; i < kMenuPage_NumPages; ++i)
 	{
 		DebugMenuPageState* page = &gMenuPages[i];
 		page->menuState = &gMenuState;
 		page->selectedOption = 0;
+		page->curEntry = 0;
+		page->maxEntries = 10;
+		page->scrollOffset = 0;
 	}
+}
+
+void updateMenuInput()
+{
+	// update controller state
+	if (gNumConnectedControllers == 0)
+	{
+		gPadButtons[0] = 0;
+		gPadButtons[1] = 0;
+	}
+	else
+	{
+		uint16 newButtons = (gControllerState.states[0].state >> 16) & 0xFFFF;
+		gPadButtons[1] = gPadButtons[0];
+		gPadButtons[0] = newButtons;
+	}
+
+	if (gPadButtons[0] != 0)
+	{
+		--gPadRepeat;
+		if (gPadRepeat < 0)
+			gPadRepeat = 1;
+	}
+	else
+	{
+		gPadRepeat = 10;
+	}
+}
+
+void updateMenuScale()
+{
+	int screenRes = getScreenResolution();
+	int screenResX = screenRes & 0xFFFF;
+	int screenResY = screenRes >> 0x10;
+
+	int scaleX = 0;
+	int scaleY = 0;
+
+	if (screenResX > 320)
+		scaleX = 1;
+	if (screenResY > 240)
+		scaleY = 1;
+
+	gDebugLogScaleX = scaleX;
+	gDebugLogScaleY = scaleY;
 }
 
 void updateDebugMenu()
 {
-	if (gMenuState.pageId == -1)
+	updateMenuInput();
+
+	// open the menu if any DPad button was pressed
+	if (gMenuState.curPage == -1)
 	{
 		if (isAnyDPadButtonPressed())
 		{
@@ -244,42 +481,56 @@ void updateDebugMenu()
 		}
 	}
 
-	if (gMenuState.pageId == -1)
+	// if the menu isn't open, bail out
+	if (gMenuState.curPage == -1)
 		return;
+
+	updateMenuScale();
 
 	bool exitMenu = false;
 
-	if (gMenuState.pageId < kMenuPage_NumMainPages)
+	// advance menu pages
+	if (gMenuState.curPage < kMenuPage_NumMainPages)
 	{
 		if (!gMenuState.isAppearing && padIsButtonPressed(kButtonDPadLeft))
-			--gMenuState.pageId;
+			--gMenuState.curPage;
 		if (!gMenuState.isAppearing && padIsButtonPressed(kButtonDPadRight))
-			++gMenuState.pageId;
+			++gMenuState.curPage;
 
-		if (gMenuState.pageId < 0)
-			gMenuState.pageId = kMenuPage_NumMainPages - 1;
+		if (gMenuState.curPage < 0)
+			gMenuState.curPage = kMenuPage_NumMainPages - 1;
 
-		gMenuState.pageId = gMenuState.pageId % kMenuPage_NumMainPages;
+		gMenuState.curPage = gMenuState.curPage % kMenuPage_NumMainPages;
 	}
 	
-	DebugMenuPageState* page = &gMenuPages[gMenuState.pageId];
+	// update the menu page
+	DebugMenuPageState* page = &gMenuPages[gMenuState.curPage];
 	page->nextPage = -1;
 
-	switch (gMenuState.pageId)
+	switch (gMenuState.curPage)
 	{
-		case kMenuPage_Main: 		doMenuPage_Gameplay(page); break;
-		case kMenuPage_MovePlayer: 	doMenuPage_MovePlayer(page); break;
+		case kMenuPage_MainGameplay: 		doMenuPage_Gameplay(page); break;
+		case kMenuPage_MainObjects: 		doMenuPage_Objects(page); break;
+
+		case kMenuPage_GameplayMovePlayer: 	doMenuPage_MovePlayer(page); break;
 	}
 
 	gMenuState.isAppearing = false;
 
+	// set the next menu page if indicated
 	if (page->nextPage != -1)
 	{
-		gMenuState.pageId = page->nextPage;
+		gMenuState.prevPage = gMenuState.curPage;
+		gMenuState.curPage = page->nextPage;
 		gMenuState.isAppearing = true; // prevent closing menu next frame
 	}
 
-	if (!gMenuState.isAppearing && gMenuState.pageId == kMenuPage_Main && padIsButtonPressed(kButtonB))
+	if (gMenuState.lockPlayer)
+		setGameStateId(kGameStateDebug);
+	else
+		setGameStateId(kGameStateInGame);
+
+	if (!gMenuState.isAppearing && gMenuState.curPage < kMenuPage_NumMainPages && padIsButtonPressed(kButtonB))
 		exitMenu = true;
 
 	if (exitMenu)

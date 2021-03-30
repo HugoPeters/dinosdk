@@ -1,0 +1,5 @@
+.vscode/
+bin/temp/
+build/fst_work/
+build/rom/*.z64
+build/out/
