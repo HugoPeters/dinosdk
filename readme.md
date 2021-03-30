@@ -1,7 +1,17 @@
-1. put your cracked rom (rename it to dino.z64) in build/rom
-2. now run build/extract_fst.bat
-3. now you can run dll_test/make.bat, which will produce a new rom for your in build/rom called out.z64
+# DinoSDK
+Workspace for building custom DLLs for Dinosaur Planet.  
+Windows-only for now, sorry nerds ¯\\\_(ツ)\_/¯
 
-tip: you can edit files in build/fst_work
+Currently this includes a small example menu, that can be easily extended:  
+![](./screen.png)
 
-credits: nuggs for additional research on the DLL system, dinosaurpla.net and the DP FindersClub discord server
+## Instructions
+1. Put your cracked ROM (rename it to dino.z64) in build/rom
+2. Now run build/extract_fst.bat
+3. Now you can run dll_test/make.bat, which will produce a new rom for you in build/rom called out.z64
+
+Tip: you can edit files in build/fst_work
+
+## [DinoFST](https://github.com/HugoPeters/dinofst)
+DinoSDK uses [DinoFST](https://github.com/HugoPeters/dinofst) to extract/repackage the ROM.  Please see that repository for credits:
+https://github.com/HugoPeters/dinofst

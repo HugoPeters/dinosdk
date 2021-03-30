@@ -1,6 +1,6 @@
 8003CD7C	loadTexture
 8003DA40	freeTexture
-80023914	?
+80023914	getPlayer
 8002394C	?
 80010D50	?
 80010C44	?
@@ -10,11 +10,11 @@
 800172E8	diFree
 8003E648	?
 8003825C	?
-8005D6C8	?
+8005D6C8	getScreenResolution
 80002490	?
 80001B18	?
 800037D8	?
-80021150	getObjList
+80021150	getObjectsList
 80004464	?
 800160E0	?
 8008C9D0	?
@@ -45,7 +45,7 @@
 80016AA8	diMalloc
 80006F50	initSomeUnusedFiles
 800070FC	freeSomeUnusedFiles
-8000F44C	?
+8000F44C	getPlayerUpdateState
 80008D90	?
 80004500	?
 8007C500	diMemcpyFast
@@ -344,7 +344,7 @@
 800229E8	?
 80010FC8	padGetStickX
 800110CC	padGetStickY
-80010C98	?
+80010C98	padGetButtons
 80010DCC	?
 80010EC8	?
 8002635C	?
@@ -516,3 +516,12 @@
 80014C50	?
 80014C28	?
 80014BD4	?
+80060eb8	logSetColor
+80060fd0	logSetPos
+800930e8	gDebugLog
+800931AC	gDebugLogScaleX
+800931B0	gDebugLogScaleY	
+800A7D84	gGameState
+80083AB0	vsnprintf
+800CD3F0	gControllerState
+800CD431	gNumConnectedControllers
