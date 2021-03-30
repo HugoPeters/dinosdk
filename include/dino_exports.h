@@ -9,8 +9,8 @@ extern "C" {
 
 typedef uint32(*_vsnprintf_func)(uint32 maxSize, const char* buff, uint32 length);
 
-extern void  	                        DLL_IMPORT 	setDisableEnvColor(bool disable);
-extern bool  	                        DLL_IMPORT 	getDisableEnvColor();
+extern void  	                        DLL_IMPORT  setDisableEnvColor(bool disable);
+extern bool  	                        DLL_IMPORT  getDisableEnvColor();
 extern void                             DLL_IMPORT  camSetFOV(float fovDeg);
 extern ObjectInstance**                 DLL_IMPORT  getObjectsList(int* outUnused, int* outNumObjs);
 extern ObjectInstance*                  DLL_IMPORT  getPlayer();
