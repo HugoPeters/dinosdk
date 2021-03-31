@@ -10,10 +10,11 @@ SET outdir=%buildir%\out
 SET gccdir=%bindir%\mips64-elf\bin
 SET gcc=mips64-elf-gcc
 SET inc=%cd%\..\include
+SET src=%cd%\..\src
 SET elf=%outdir%\out.elf
 SET fst=%buildir%\fst_work
 SET importdef=%fst%\DLLSIMPORTTAB.def
-SET srcdir=%cd%
+SET modsrcdir=%cd%
 SET dll=%fst%\DLLS\%dllName%.dll
 
 @REM unfortunately we need -mabi=32 for va_args to work correctly with the game's vsnprintf
@@ -26,8 +27,9 @@ SET outrom=%romdir%\out.z64
 if not exist %outdir% mkdir %outdir%
 
 pushd %gccdir%
-CALL %gcc% %cargs% -c %srcdir%\hello.c -o %outdir%\hello.o
-CALL %gcc% %cargs% %linkargs% %outdir%\hello.o -o %elf%
+CALL %gcc% %cargs% -c %modsrcdir%\hello.c -o %outdir%\hello.o
+CALL %gcc% %cargs% -c %src%\di_camera.c -o %src%\di_camera.o
+CALL %gcc% %cargs% %linkargs% %outdir%\hello.o %src%\di_camera.o -o %elf%
 popd
 
 pushd %bindir%

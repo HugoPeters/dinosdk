@@ -1,4 +1,7 @@
-#include "dino_exports.h"
+#include "di_exports.h"
+#include "di_dlls.h"
+#include "di_camera.h"
+#include "di_math.h"
 
 // this is simply a proof of concept, please don't take it too serious
 
@@ -83,11 +86,11 @@ inline void logEndLine()
     logPutChar(0);
 }
 
-uint32 printLogHandler(uint32 maxSize, const char* buff, uint32 length)
+void* printLogHandler(void* arg, const char* buff, uint32 length)
 {
     for (uint32 i = 0; i < length; ++i)
         logPutChar(buff[i]);
-    return 1;
+    return (void*)1;
 }
 
 void printStr(const char* fmt, ...)
@@ -122,9 +125,9 @@ typedef struct _snprintfState
     uint32 buffLeft;
 } snprintfState;
 
-uint32 snprintfHandler(uint32 statePtr, const char* buff, uint32 length)
+void* snprintfHandler(void* arg, const char* buff, uint32 length)
 {
-    snprintfState* state =	(snprintfState*)statePtr;
+    snprintfState* state =	(snprintfState*)arg;
 
     while (length > 0 && state->buffLeft > 0)
     {
@@ -133,7 +136,7 @@ uint32 snprintfHandler(uint32 statePtr, const char* buff, uint32 length)
         --length;
     }
 
-    return state->buffLeft > 0 ? (uint32)state : 0;
+    return state->buffLeft > 0 ? state : 0;
 }
 
 void snprintf2(char* buff, uint32 buffSize, const char* fmt, ...)
@@ -152,7 +155,7 @@ void snprintf2(char* buff, uint32 buffSize, const char* fmt, ...)
     state.buff = buff;
     va_list vlist;
     va_start(vlist, fmt);
-    vsnprintf(&snprintfHandler, (uint32)&state, fmt, vlist);
+    vsnprintf(&snprintfHandler, &state, fmt, vlist);
     va_end(vlist);
 
     buff[state.buff - buff] = 0;
@@ -287,6 +290,7 @@ typedef enum _DebugMenuPage
 {
     kMenuPage_MainGameplay = 0,
     kMenuPage_MainObjects,
+    kMenuPage_MainCamera,
 
     kMenuPage_NumMainPages,
 
@@ -326,32 +330,62 @@ void doMenuPage_MovePlayer(DebugMenuPageState* page)
     if (padIsButtonPressed(kButtonB))
         page->nextPage = page->menuState->prevPage;
         
-    ObjectInstance* obj = getPlayer();
+    ObjectInstance* player = getPlayer();
 
     printLine("MOVE");
 
-    if (!obj)
+    if (!player)
     {
         printLine("NO PLAYER!");
         return;
     }
 
     beginMenu(page);
+    printLine("x=%.2f, y=%.2f, z=%.2f", player->transform.pos.x, player->transform.pos.y, player->transform.pos.z);
     doLockPlayerToggle(page);
     endMenu(page);
 
+    const float moveSpeed = 10.f;
+    
     float stick_x = padGetStickX(0, -1) / 70.f;
     float stick_y = padGetStickY(0, -1) / 70.f;
     bool moveUp = padIsButtonDown(kButtonRTrig);
     bool moveDown = padIsButtonDown(kButtonLTrig);
 
-    if (moveUp)
-        obj->pos.y += 10;
-    if (moveDown)
-        obj->pos.y -= 10;
+    stick_x *= moveSpeed;
+    stick_y *= moveSpeed;
 
-    obj->pos.x += stick_x * 10.f;
-    obj->pos.z += stick_y * 10.f;
+    if (moveUp)
+        player->transform.pos.y += moveSpeed;
+    if (moveDown)
+        player->transform.pos.y -= moveSpeed;
+
+    Transform* camTransform = cameraGetTransform();
+
+    if (!camTransform)
+    {
+        player->transform.pos.x -= stick_x;
+        player->transform.pos.z += stick_y;
+    }
+    else
+    {
+        // only works because camera does a direct lookat at the player
+        vec3f forward;
+        vec3f_subtract(&player->transform.pos, &camTransform->pos, &forward);
+        
+        // only care about horizontal plane
+        forward.y = 0;
+
+        vec3f_normalize(&forward);
+
+        static const vec3f up = { 0, 1, 0 };
+
+        vec3f right;
+        vec3f_cross(&forward, &up, &right);
+        
+        player->transform.pos.x += (forward.x * stick_y) + (right.x * stick_x);
+        player->transform.pos.z += (forward.z * stick_y) + (right.z * stick_x);
+    }
 }
 
 void doMenuPage_Objects(DebugMenuPageState* page)
@@ -370,6 +404,25 @@ void doMenuPage_Objects(DebugMenuPageState* page)
 
         menuOption(page, optionName);
     }
+
+    endMenu(page);
+}
+
+void doMenuPage_Camera(DebugMenuPageState* page)
+{
+    menuTitle(page, "camera");
+
+    beginMenu(page);
+
+    int widescreenFlag = gWidescreenFlag;
+    if (menuCheckbox(page, "widescreen", &widescreenFlag))
+        gWidescreenFlag = (uint8)widescreenFlag;
+
+    Transform* camTransform = cameraGetTransform();
+    if (!camTransform)
+        printLine("No camera state!");
+    else
+        printLine("cam pos: %.2f (x=%.2f, y=%.2f, z=%.2f)", 0.1f, camTransform->pos.x, camTransform->pos.y, camTransform->pos.z);
 
     endMenu(page);
 }
@@ -511,6 +564,7 @@ void updateDebugMenu()
     {
         case kMenuPage_MainGameplay: 		doMenuPage_Gameplay(page); break;
         case kMenuPage_MainObjects: 		doMenuPage_Objects(page); break;
+        case kMenuPage_MainCamera: 		    doMenuPage_Camera(page); break;
 
         case kMenuPage_GameplayMovePlayer: 	doMenuPage_MovePlayer(page); break;
     }

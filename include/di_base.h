@@ -78,6 +78,19 @@ typedef struct _vec3i16
     int16 x, y, z;
 } vec3i16;
 
+typedef struct _mtx44
+{
+    float m[16];
+} mtx44;
+
+typedef struct _Transform // 24 bytes
+{
+    vec3i16 rot;
+    int16 unk0;
+    float scale;
+    vec3f pos;
+} Transform;
+
 typedef struct _Object
 {
     float unk0;     // 0-4
@@ -89,10 +102,7 @@ typedef struct _Object
 
 typedef struct _ObjectInstance
 {
-    vec3i16 rot;    // 0-6
-    int16 unk0;     // 6-8
-    float scale;    // 8-12
-    vec3f pos;      // 12-24
+    Transform transform; // 0-24
     char padToObjDef[0x50 - 24];
     Object* objDef;
 } ObjectInstance;
