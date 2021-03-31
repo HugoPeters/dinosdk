@@ -28,8 +28,8 @@ if not exist %outdir% mkdir %outdir%
 
 pushd %gccdir%
 CALL %gcc% %cargs% -c %modsrcdir%\hello.c -o %outdir%\hello.o
-CALL %gcc% %cargs% -c %src%\di_camera.c -o %src%\di_camera.o
-CALL %gcc% %cargs% %linkargs% %outdir%\hello.o %src%\di_camera.o -o %elf%
+CALL %gcc% %cargs% -c %src%\di_camera.c -o %outdir%\di_camera.o
+CALL %gcc% %cargs% %linkargs% %outdir%\hello.o %outdir%\di_camera.o -o %elf%
 popd
 
 pushd %bindir%
