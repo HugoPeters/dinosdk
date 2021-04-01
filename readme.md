@@ -13,5 +13,5 @@ Currently this includes a small example menu, that can be easily extended:
 Tip: you can edit files in build/fst_work
 
 ## [DinoFST](https://github.com/HugoPeters/dinofst)
-DinoSDK uses [DinoFST](https://github.com/HugoPeters/dinofst) to extract/repackage the ROM.  Please see that repository for credits:
+DinoSDK uses [DinoFST](https://github.com/HugoPeters/dinofst) to convert MIPS .ELFs to DP compatible .DLLs and extract/repackage the ROM.  Please see that repository for more info to the inner workings as well as credits:
 https://github.com/HugoPeters/dinofst
