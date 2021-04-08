@@ -291,10 +291,12 @@ typedef enum _DebugMenuPage
     kMenuPage_MainGameplay = 0,
     kMenuPage_MainObjects,
     kMenuPage_MainCamera,
+    kMenuPage_MainWarp,
 
     kMenuPage_NumMainPages,
 
     kMenuPage_GameplayMovePlayer,
+    kMenuPage_CameraFreeCam,
 
     kMenuPage_NumPages
 } DebugMenuPage;
@@ -341,7 +343,11 @@ void doMenuPage_MovePlayer(DebugMenuPageState* page)
     }
 
     beginMenu(page);
-    printLine("x=%.2f, y=%.2f, z=%.2f", player->transform.pos.x, player->transform.pos.y, player->transform.pos.z);
+
+
+    vsnprintf(&printLogHandler, 0, "x=%.2f, y=%.2f, z=%.2f", &player->transform.pos);
+    logEndLine();
+
     doLockPlayerToggle(page);
     endMenu(page);
 
@@ -408,21 +414,238 @@ void doMenuPage_Objects(DebugMenuPageState* page)
     endMenu(page);
 }
 
+
+typedef struct _FreeCamState
+{
+    CameraBehavior* camBehavior;
+    uint16 lastCamBehaviorType;
+    uint32 lastCamUpdateFunc;
+    int speedRaw;
+    int showCamSpeedTimer;
+} FreeCamState;
+
+FreeCamState gFreeCam;
+
+void updateFreeCam(CameraState* state)
+{
+    float stick_x = padGetStickX(0, -1) / 70.f;
+    float stick_y = padGetStickY(0, -1) / 70.f;
+
+    if (gFreeCam.showCamSpeedTimer > 0)
+    {
+        printLine("speed: %i", gFreeCam.speedRaw);
+        --gFreeCam.showCamSpeedTimer;
+    } 
+
+    if (padIsButtonDown(kButtonZ))
+    {
+        state->transform.rot.x = 0;
+        state->transform.rot.y = 0;
+        state->transform.rot.z = 0;
+        state->fov = 60;
+        gFreeCam.speedRaw = 100;
+        gFreeCam.showCamSpeedTimer = 60;
+    }
+
+    bool moveFast = padIsButtonDown(kButtonA);
+
+    // use as switch -> if A is pressed, use dpad up/down as FOV control
+    if (!moveFast)
+    {
+        if (padIsButtonPressedRepeat(kButtonDPadUp))
+        {
+            gFreeCam.showCamSpeedTimer = 60;
+            ++gFreeCam.speedRaw;
+        }
+        if (padIsButtonPressedRepeat(kButtonDPadDown))
+        {
+            gFreeCam.showCamSpeedTimer = 60;
+            --gFreeCam.speedRaw;
+        }
+
+        if (gFreeCam.speedRaw < 1)
+            gFreeCam.speedRaw = 1;
+    }
+
+    float camSpeed = (moveFast ? gFreeCam.speedRaw * 3 : gFreeCam.speedRaw) / 10.f;
+
+    bool moveUp = padIsButtonDown(kButtonRTrig);
+    bool moveDown = padIsButtonDown(kButtonLTrig);
+
+    bool crotLeft = padIsButtonDown(kButtonCLeft);
+    bool crotRight = padIsButtonDown(kButtonCRight);
+    bool crotUp = padIsButtonDown(kButtonCUp);
+    bool crotDown = padIsButtonDown(kButtonCDown);
+
+    bool dpadLeft = padIsButtonDown(kButtonDPadLeft);
+    bool dpadRight = padIsButtonDown(kButtonDPadRight);
+
+    int16 deltaRot = (int16)(0x300 * (camSpeed / 10.f));
+    state->transform.rot.x += (crotLeft ? -deltaRot : 0) + (crotRight ? deltaRot : 0);
+    state->transform.rot.y += (crotUp ? -deltaRot : 0) + (crotDown ? deltaRot : 0);
+    state->transform.rot.z += (dpadLeft ? -deltaRot : 0) + (dpadRight ? deltaRot : 0);
+
+    mtx44 camMtx;
+
+    // for some reason cam transform has 0 scale
+    Transform transformScaled = state->transform;
+    transformScaled.scale = 1;
+    mtx44_createFromTransform(&camMtx, &transformScaled);
+
+    vec3f camDirX, camDirZ;
+    mtx44_getAxisX(&camMtx, &camDirX);
+    mtx44_getAxisZ(&camMtx, &camDirZ);
+
+    vec3f_scale_add(&state->transform.pos, &camDirZ, stick_y * camSpeed, &state->transform.pos);
+    vec3f_scale_add(&state->transform.pos, &camDirX, stick_x * camSpeed, &state->transform.pos);
+
+    state->transform.pos.y += (moveUp ? camSpeed : 0) + (moveDown ? -camSpeed : 0);
+
+    if (moveFast)
+    {
+        // use dpad for FOV
+        bool dpadUp = padIsButtonDown(kButtonDPadUp);
+        bool dpadDown = padIsButtonDown(kButtonDPadDown);
+        
+        float fovDelta = 0.1f * (gFreeCam.speedRaw / 10.f);
+        state->fov += (dpadUp ? -fovDelta : 0) + (dpadDown ? fovDelta : 0);
+
+        // adhere to game limits
+        if (state->fov < 40.f)
+            state->fov = 40.f;
+        if (state->fov > 90.f)
+            state->fov = 90.f;
+    }
+}
+
+void patchFreeCamFunctions()
+{
+    uint32* exports = gFreeCam.camBehavior->dllFuncs->exports;
+    exports[2] = &updateFreeCam;
+}
+
+void enterFreeCam()
+{
+    // now, we could do this properly, it would mean writing a custom camera interface DLL
+    // and using setBehavior here, but who really cares : )
+
+    gFreeCam.lastCamBehaviorType = -1;
+    gFreeCam.camBehavior = cameraGetBehavior();
+    gFreeCam.speedRaw = 100;
+    gFreeCam.showCamSpeedTimer = 0;
+
+    uint32* exports = gFreeCam.camBehavior->dllFuncs->exports;
+    gFreeCam.lastCamUpdateFunc = exports[2];
+
+    patchFreeCamFunctions();
+}
+
+void exitFreeCam()
+{
+    uint32* exports = gFreeCam.camBehavior->dllFuncs->exports;
+    exports[2] = gFreeCam.lastCamUpdateFunc;
+}
+
+void doMenuPage_FreeCamera(DebugMenuPageState* page)
+{
+    patchFreeCamFunctions();
+
+    if (padIsButtonPressed(kButtonB))
+    {
+        exitFreeCam();
+        page->nextPage = page->menuState->prevPage;
+    }
+}
+
 void doMenuPage_Camera(DebugMenuPageState* page)
 {
     menuTitle(page, "camera");
 
     beginMenu(page);
 
+    if (menuOption(page, "free cam"))
+    {
+        enterFreeCam();
+        page->nextPage = kMenuPage_CameraFreeCam;
+    }
+
     int widescreenFlag = gWidescreenFlag;
     if (menuCheckbox(page, "widescreen", &widescreenFlag))
         gWidescreenFlag = (uint8)widescreenFlag;
 
-    Transform* camTransform = cameraGetTransform();
-    if (!camTransform)
-        printLine("No camera state!");
-    else
-        printLine("cam pos: %.2f (x=%.2f, y=%.2f, z=%.2f)", 0.1f, camTransform->pos.x, camTransform->pos.y, camTransform->pos.z);
+    endMenu(page);
+}
+
+void doMenuPage_Warp(DebugMenuPageState* page)
+{
+    beginMenu(page);
+
+    menuTitle(page, "warp");
+
+    typedef struct _WarpInfo
+    {
+        int index;
+        char name[32];
+    } WarpInfo;
+
+    static const WarpInfo sWarpInfos[] =
+    {
+        { 2, "Ice Mountain" },
+        { 5, "WM Back" },
+        { 6, "WM Front" },
+        { 12, "CloudRunner Prison" },
+        { 14, "SwapStone Circle" },
+        { 15, "SwapStone Hollow" },
+        { 25, "Warlock Mountain" },
+        { 26, "Ice Mountain" },
+        { 29, "Boss Galadon" },
+        { 30, "Boss Galadon Mouth" },
+        { 31, "Desert" },
+        // bunch of useless WM ones here
+        { 36, "Test 1" },
+        { 37, "Test 2" },
+        { 38, "Test 3" },
+        { 39, "Test 4" },
+        { 40, "Test 5" },
+        { 41, "Test 6" },
+        { 42, "Test 7" },
+        { 43, "Test 8" },
+        // bunch of useless WM ones here
+        { 54, "Boss Galadon" },
+        { 55, "Boss Galadon Outro" },
+        // more WM ones
+        { 60, "Removed? CloudRunner Bottom" },
+        { 61, "Inside Galleon" },
+        { 63, "WM Chamber Top" },
+        { 64, "Discovery Falls" },
+        { 66, "Diamond Bay" },
+        { 68, "Unavailable?" },
+        { 73, "Moon Mountain Pass" },
+        // more WM
+        { 80, "SwapStone Circle intro" },
+        { 81, "Volcano Force Point" },
+        { 82, "SwapStone Hollow QE" },
+        { 85, "SwapStone Circle" },
+        { 86, "Shop" },
+        { 87, "Magic Cave" },
+        { 88, "Dragon Rock Minecarts" },
+        { 90, "Boss T-Rex" },
+        { 91, "Walled City" },
+        { 92, "Boss Galadon intro" },
+        { 93, "Unavailable?" },
+        { 95, "Northern Wastes" },
+    };
+
+    for (int i = 0; i < sizeof(sWarpInfos) / sizeof(WarpInfo); ++i)
+    {
+        char optionName[64];
+        snprintf2(optionName, sizeof(optionName), "%i: %s", sWarpInfos[i].index, sWarpInfos[i].name);
+
+        if (menuOption(page, optionName))
+        {
+            warpPlayer(sWarpInfos[i].index, 1);
+        }
+    }
 
     endMenu(page);
 }
@@ -565,8 +788,16 @@ void updateDebugMenu()
         case kMenuPage_MainGameplay: 		doMenuPage_Gameplay(page); break;
         case kMenuPage_MainObjects: 		doMenuPage_Objects(page); break;
         case kMenuPage_MainCamera: 		    doMenuPage_Camera(page); break;
+        //case kMenuPage_MainWarp: 		    doMenuPage_Warp(page); break;
 
         case kMenuPage_GameplayMovePlayer: 	doMenuPage_MovePlayer(page); break;
+    }
+
+    switch (gMenuState.curPage)
+    {
+        case kMenuPage_MainWarp: 		    doMenuPage_Warp(page); break;
+
+        case kMenuPage_CameraFreeCam: 		doMenuPage_FreeCamera(page); break;
     }
 
     gMenuState.isAppearing = false;

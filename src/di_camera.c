@@ -13,6 +13,18 @@ CameraState* cameraGetState()
     return camState;
 }
 
+CameraBehavior* cameraGetBehavior()
+{
+    DLL_Camera* camDLL = (DLL_Camera*)dllGetFuncs(kDLL_Camera);
+
+    if (!camDLL)
+        return NULL;
+
+    CameraBehavior* camBehavior = camDLL->getBehavior();
+
+    return camBehavior;
+}
+
 Transform* cameraGetTransform()
 {
     CameraState* camState = cameraGetState();

@@ -73,10 +73,10 @@ typedef struct _vec3f
     float x, y, z;
 } vec3f;
 
-typedef struct _vec3i16
+typedef struct _vec3ui16
 {
-    int16 x, y, z;
-} vec3i16;
+    uint16 x, y, z;
+} vec3ui16;
 
 typedef struct _mtx44
 {
@@ -85,7 +85,8 @@ typedef struct _mtx44
 
 typedef struct _Transform // 24 bytes
 {
-    vec3i16 rot;
+    //x=yaw, y=pitch, z=roll
+    vec3ui16 rot;
     int16 unk0;
     float scale;
     vec3f pos;
