@@ -6,9 +6,11 @@ Currently this includes a small example menu, that can be easily extended:
 ![](./screen.png)
 
 ## Instructions
-1. Put your cracked ROM (rename it to dino.z64) in build/rom
-2. Now run build/extract_fst.bat
-3. Now you can run dll_test/make.bat, which will produce a new rom for you in build/rom called out.z64
+1. Clone the repo, using a git client, or download the repo using Code (green button) -> Download ZIP
+2. Make sure there are no spaces in the path to DinoSDK!
+3. Put your cracked ROM (rename it to dino.z64) in build/rom
+4. Now run build/extract_fst.bat
+5. Now you can run dll_test/make.bat, which will produce a new rom for you in build/rom called out.z64
 
 Tip: you can edit files in build/fst_work
 
