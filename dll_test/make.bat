@@ -13,12 +13,12 @@ SET inc=%cd%\..\include
 SET src=%cd%\..\src
 SET elf=%outdir%\out.elf
 SET fst=%buildir%\fst_work
-SET importdef=%fst%\DLLSIMPORTTAB.def
+SET importdef=%buildir%\DLLSIMPORTTAB.def
 SET modsrcdir=%cd%
 SET dll=%fst%\DLLS\%dllName%.dll
 
 @REM unfortunately we need -mabi=32 for va_args to work correctly with the game's vsnprintf
-SET cargs=-std=c99 -EB -march=r4300 -mabi=32 -shared -fPIC -mabicalls -O3 -g -nostdlib -G0 -fno-builtin-fprintf -fno-builtin-fvsnprintf -fvisibility=hidden -ffunction-sections -fdata-sections -Wno-endif-labels -mhard-float -I%inc%
+SET cargs=-std=c99 -EB -march=r4300 -mabi=32 -mfpxx -mno-odd-spreg -ffreestanding -mfix4300 -shared -fPIC -mabicalls -O3 -g3 -nostdlib -G0 -fno-builtin-fprintf -fno-builtin-fvsnprintf -fvisibility=hidden -ffunction-sections -fdata-sections -Wno-endif-labels -mhard-float -I%inc%
 SET linkargs=-Wl,--undefined,dynamic_lookup,--warn-constructors,--section-start=.bss=0x00800000 -T %bindir%\link_dll.ld
 
 SET inrom=%romdir%\%romName%
