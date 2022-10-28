@@ -245,7 +245,7 @@
 8008CA00	?
 8001442C	?
 800142A0	?
-8000F404	?
+8000F404	setMenuPage
 8007D440	?
 8007D100	?
 8007D300	?
@@ -532,3 +532,11 @@
 8001679c    vec3f_subtract
 8001588c    mtx44_scale
 800167d4    vec3f_scale_add
+800AE680	gRenderCmdList
+800AE690	gRenderCmdMtx
+80037A14	clearScreen
+800141A4	initGameForMenu
+8000be04	dllLoadThreaded
+800b1900    gObjectTypesList
+800b18f0    gNumObjectTypes
+80023464    spawnPlayer

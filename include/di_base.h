@@ -3,6 +3,19 @@
 
 #include <stdbool.h>
 
+#define STR_MERGE_IMPL(a, b) a##b
+#define STR_MERGE(a, b) STR_MERGE_IMPL(a, b)
+#define MAKE_PAD(size) STR_MERGE(_pad, __COUNTER__)[size]
+
+#define OFF_STRUCT(members) union { members }
+
+#define OFF_MEMB(offset, member)                 \
+        PACKED_STRUCT {                          \
+            char MAKE_PAD(offset);               \
+            member;                              \
+        }
+
+
 typedef signed char        int8;
 typedef short              int16;
 typedef int                int32;
@@ -15,6 +28,8 @@ typedef unsigned long long uint64;
 typedef unsigned long	   ulong;
 
 #define NULL 0
+#define TRUE 1
+#define FALSE 0
 
 #ifdef __GNUC__
 #define MAKE_VISIBLE __attribute__((visibility("default")))
@@ -25,6 +40,7 @@ typedef unsigned long	   ulong;
 #define va_start __builtin_va_start
 #define va_arg __builtin_va_arg
 #define va_end __builtin_va_end
+#define PACKED_STRUCT struct __attribute__ ((__packed__))
 #else // mainly to make intellisense play nice
 #define MAKE_VISIBLE
 #define PREVENT_OPTIMIZE
@@ -34,6 +50,7 @@ typedef unsigned long	   ulong;
 #define va_start
 #define va_arg
 #define va_end
+#define PACKED_STRUCT struct
 #endif
 
 typedef enum _PadButton
@@ -68,22 +85,28 @@ typedef enum _GameState
     kGameStateMenuGameOver      = 9,
 } GameState;
 
-typedef struct _vec3f
+typedef enum _PlayerType
+{
+    kPlayerTypeSabre            = 0,
+    kPlayerTypeKrystal          = 1
+} PlayerType;
+
+typedef PACKED_STRUCT _vec3f
 {
     float x, y, z;
 } vec3f;
 
-typedef struct _vec3ui16
+typedef PACKED_STRUCT _vec3ui16
 {
     uint16 x, y, z;
 } vec3ui16;
 
-typedef struct _mtx44
+typedef PACKED_STRUCT _mtx44
 {
     float m[16];
 } mtx44;
 
-typedef struct _Transform // 24 bytes
+typedef PACKED_STRUCT _Transform // 24 bytes
 {
     //x=yaw, y=pitch, z=roll
     vec3ui16 rot;
@@ -92,29 +115,71 @@ typedef struct _Transform // 24 bytes
     vec3f pos;
 } Transform;
 
-typedef struct _Object
+typedef enum _ObjectSetupFlag
 {
-    float unk0;     // 0-4
-    float scale;    // 4-8
-    char pad[0x5f-8];
-    char name[16];
-    uint8 classType;
+    kObjectSetupFlag_DisableModels  = 1,
+} ObjectSetupFlag;
+
+typedef PACKED_STRUCT _Object
+{
+    OFF_STRUCT(
+        OFF_MEMB(0, float unk0);
+        OFF_MEMB(4, float scale);
+        OFF_MEMB(8, uint32 modelIdsOffset);
+        OFF_MEMB(16, uint32 sequenceBonesOffset);
+        OFF_MEMB(28, uint32 objSeqsOffset);
+        OFF_MEMB(68, uint32 setupFlags);
+        OFF_MEMB(93, uint8 numModels);
+        OFF_MEMB(95, char name[16]);
+        OFF_MEMB(111, uint8 classType);
+        OFF_MEMB(114, uint8 numSequenceBones);
+        OFF_MEMB(120, int16 modLinesId);
+        OFF_MEMB(122, uint16 numObjSeqs);
+    );
 } Object;
 
-typedef struct _ObjectInstance
+typedef PACKED_STRUCT _PlayerState
 {
-    Transform transform; // 0-24
-    char padToObjDef[0x50 - 24];
-    Object* objDef;
+    OFF_STRUCT(
+        OFF_MEMB(200, void* weaponObject);
+        OFF_MEMB(620, int16 nextStateId);
+        OFF_MEMB(622, int16 currentStateId);
+        OFF_MEMB(626, int8 isStateSwitch);
+        OFF_MEMB(948, void* weaponData);
+        OFF_MEMB(952, void* charSpecificData1);
+        OFF_MEMB(956, void* charSpecificHandlerFunc);
+        OFF_MEMB(2208, int8 numWeapons);
+        OFF_MEMB(2228, int8 playerType);
+    );
+} PlayerState;
+
+typedef PACKED_STRUCT _ObjectInstance
+{
+    OFF_STRUCT(
+        OFF_MEMB(0, Transform transform);
+        OFF_MEMB(6, uint16 someFlags);
+        OFF_MEMB(48, void* rootObjectInstance);
+        OFF_MEMB(70, int16 objectTypeId);
+        OFF_MEMB(80, Object* objDef);
+        OFF_MEMB(124, void* loadedModels);
+        OFF_MEMB(152, float animProgress);
+        OFF_MEMB(156, float animProgress2);
+        OFF_MEMB(160, int16 currentAnimId);
+        OFF_MEMB(173, char someActiveModelId);
+        OFF_MEMB(176, uint16 someFlags2);
+        OFF_MEMB(184, PlayerState* playerState);
+        OFF_MEMB(188, void* updateFunc);
+        OFF_MEMB(200, void* weaponObject);
+    );
 } ObjectInstance;
 
-typedef struct _RawControllerState
+typedef PACKED_STRUCT _RawControllerState
 {
     uint32 unk0;
     uint32 state;
 } RawControllerState;
 
-typedef struct _RawControllerStateArray
+typedef PACKED_STRUCT _RawControllerStateArray
 {
     RawControllerState states[4];
 } RawControllerStateArray;
