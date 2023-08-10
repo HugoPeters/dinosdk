@@ -4,8 +4,10 @@
 #include "di_base.h"
 
 extern float    DLL_IMPORT  floorf(float v);
-extern int      DLL_IMPORT  sins(int16 v);
-extern int      DLL_IMPORT  coss(int16 v);
+extern int      DLL_IMPORT  sin16_precise(int16 v);
+extern int      DLL_IMPORT  cos16_precise(int16 v);
+extern int      DLL_IMPORT  sin16(int16 v);
+extern int      DLL_IMPORT  cos16(int16 v);
 extern float    DLL_IMPORT  vec3f_dot(const vec3f* a, const vec3f* b);
 extern float    DLL_IMPORT  vec3f_length(const vec3f* a);
 extern float    DLL_IMPORT  vec3f_lengthSquared(const vec3f* a);

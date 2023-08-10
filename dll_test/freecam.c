@@ -1,4 +1,5 @@
-#include "di_exports.h"
+#include "freecam.h"
+#include "di_imports.h"
 #include "di_dlls.h"
 #include "di_camera.h"
 #include "di_math.h"
@@ -18,8 +19,8 @@ FreeCamState gFreeCam;
 
 void freecamUpdate(CameraState* state)
 {
-    float stick_x = padGetStickX(0, -1) / 70.f;
-    float stick_y = padGetStickY(0, -1) / 70.f;
+    float stick_x = padGetStickXFromBuffer(0, -1) / 70.f;
+    float stick_y = padGetStickYFromBuffer(0, -1) / 70.f;
 
     if (gFreeCam.showCamSpeedTimer > 0)
     {

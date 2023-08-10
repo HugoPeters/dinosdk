@@ -1,5 +1,5 @@
 #include "../hackInfo.h"
-#include "di_exports.h"
+#include "di_imports.h"
 
 HackInfo gHackShowMemStats;
 

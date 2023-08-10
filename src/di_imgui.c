@@ -1,5 +1,5 @@
 #include "di_imgui.h"
-#include "di_exports.h"
+#include "di_imports.h"
 #include "di_pad.h"
 
 static DebugMenuState* gCurrentMenuState;

@@ -1,5 +1,5 @@
 #include "di_pad.h"
-#include "di_exports.h"
+#include "di_imports.h"
 
 static uint16 gPadButtons[2];
 static int gPadRepeat;

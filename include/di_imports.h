@@ -25,9 +25,9 @@ extern void*                            DLL_IMPORT  dllLoadThreaded(int dllId);
 extern void                             DLL_IMPORT  logSetColor(uint8 r, uint8 g, uint8 b, uint8 a);
 extern void                             DLL_IMPORT  logSetPos(int32 x, int32 y);
 
-extern int                              DLL_IMPORT  padGetStickX(int padId, int frame);
-extern int                              DLL_IMPORT  padGetStickY(int padId, int frame);
-extern uint16                           DLL_IMPORT  padGetButtons(int padId, int frame);
+extern int                              DLL_IMPORT  padGetStickXFromBuffer(int padId, int frame);
+extern int                              DLL_IMPORT  padGetStickYFromBuffer(int padId, int frame);
+extern uint16                           DLL_IMPORT  padGetButtonsFromBuffer(int padId, int frame);
 
 extern void                             DLL_IMPORT  warpPlayer(int warpId, char unk0);
 extern void                             DLL_IMPORT  initGameForMenu(int mapId, int unk0, int playerType, int unk1);

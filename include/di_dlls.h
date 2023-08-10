@@ -1,7 +1,7 @@
 #ifndef _DLLS_H_
 #define _DLLS_H_
 
-#include "di_exports.h"
+#include "di_imports.h"
 
 typedef enum _DLLTypes
 {

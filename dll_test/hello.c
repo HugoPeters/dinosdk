@@ -1,4 +1,4 @@
-#include "di_exports.h"
+#include "di_imports.h"
 #include "di_dlls.h"
 #include "di_camera.h"
 #include "di_math.h"
@@ -7,10 +7,11 @@
 #include "di_warp.h"
 #include "di_bootMenu.h"
 #include "utils.h"
+#include "freecam.h"
 
 #include "menuPageTypes.h"
 
-#define THIS_DLL_ID 15
+#define THIS_DLL_ID 79
 
 // this is simply a proof of concept, please don't take it too serious
 
@@ -22,11 +23,6 @@ void frameHook();
 
 extern void doMenuPage_Camera();
 extern void doMenuPage_MovePlayer();
-
-extern void freecamUpdate(CameraState* state);
-extern void freecamPatchFuncs();
-extern void freecamEnter();
-extern void freecamExit();
 
 extern void hacksRegister();
 extern void hacksUpdateMenu();
@@ -178,7 +174,7 @@ void doMenuPage_Warp()
 
     for (int i = 0; i < warpGetNumEntries(); ++i)
     {
-        WarpInfo* warpInfo = warpGetInfo(i);
+        const WarpInfo* warpInfo = warpGetInfo(i);
 
         char optionName[64];
         snprintf2(optionName, sizeof(optionName), "%i: %s", warpInfo->index, warpInfo->name);

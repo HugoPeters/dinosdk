@@ -1,4 +1,4 @@
-#include "di_exports.h"
+#include "di_imports.h"
 #include "di_dlls.h"
 #include "di_camera.h"
 #include "di_math.h"
@@ -6,9 +6,6 @@
 #include "di_imgui.h"
 #include "hackInfo.h"
 #include "menuPageTypes.h"
-
-#define JSMN_STATIC
-#include "jsmn.h"
 
 extern HackInfo* hackHideEnvironment_Register();
 extern HackInfo* hackShowHiddenObjects_Register();

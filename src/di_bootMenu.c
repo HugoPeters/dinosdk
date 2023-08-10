@@ -1,5 +1,5 @@
 #include "di_bootMenu.h"
-#include "di_exports.h"
+#include "di_imports.h"
 #include "di_dlls.h"
 #include "di_camera.h"
 #include "di_math.h"
@@ -78,7 +78,7 @@ void bootMenu_MainPage()
 
     for (int i = 0; i < warpGetNumEntries(); ++i)
     {
-        WarpInfo* warpInfo = warpGetInfo(i);
+        const WarpInfo* warpInfo = warpGetInfo(i);
 
         char optionName[64];
         snprintf2(optionName, sizeof(optionName), "%s", warpInfo->name);

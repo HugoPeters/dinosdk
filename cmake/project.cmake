@@ -1,6 +1,6 @@
 set(elf_target ${CMAKE_PROJECT_NAME}.elf)
 set(dll_name ${CMAKE_PROJECT_NAME}.dll)
-set(rom_dll_name core-015-unk)
+set(rom_dll_name core-079-unk)
 
 add_executable(${elf_target} ${SRCS})
 
