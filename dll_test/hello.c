@@ -79,7 +79,7 @@ void DLL_EXPORT onLoad(void* aThis)
     // dllInstallHook();
 
     // hook the menu DLL IDs to redirect to this DLL for main menu functionality!
-    bootMenuInstall(THIS_DLL_ID);
+    // bootMenuInstall(THIS_DLL_ID);
 
     hacksRegister();
 }
@@ -129,10 +129,18 @@ void doMenuPage_Gameplay()
     if (menuOption("move player"))
         menuPageSetNext(kMenuPage_GameplayMovePlayer);
 
-    hacksUpdateMenu();
+    if (menuOption("hacks"))
+        menuPageSetNext(kMenuPage_SelectHacks);
 
     doLockPlayerToggle();
 
+    endMenu();
+}
+
+void doMenuPage_Hacks()
+{
+    beginMenu();
+    hacksUpdateMenu();
     endMenu();
 }
 
@@ -207,6 +215,7 @@ void frameHook()
             case kMenuPage_GameplayMovePlayer: 	doMenuPage_MovePlayer(); break;
             case kMenuPage_MainWarp: 		    doMenuPage_Warp(); break;
             case kMenuPage_CameraFreeCam: 		doMenuPage_FreeCamera(); break;
+            case kMenuPage_SelectHacks:         doMenuPage_Hacks(); break;
 
             default:                            hacksUpdateMenuPage(); break;
         }

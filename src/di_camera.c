@@ -3,7 +3,7 @@
 
 CameraState* cameraGetState()
 {
-    DLL_Camera* camDLL = (DLL_Camera*)dllGetFuncs(kDLL_Camera);
+    DLL_Camera* camDLL = (DLL_Camera*)gDLL_camcontrol->entryPoint.exports;
 
     if (!camDLL)
         return NULL;
@@ -15,7 +15,7 @@ CameraState* cameraGetState()
 
 CameraBehavior* cameraGetBehavior()
 {
-    DLL_Camera* camDLL = (DLL_Camera*)dllGetFuncs(kDLL_Camera);
+    DLL_Camera* camDLL = (DLL_Camera*)gDLL_camcontrol->entryPoint.exports;
 
     if (!camDLL)
         return NULL;

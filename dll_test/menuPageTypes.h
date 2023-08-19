@@ -7,6 +7,7 @@ typedef enum _DebugMenuPage
     kMenuPage_MainObjects,
     kMenuPage_MainCamera,
     kMenuPage_MainWarp,
+    kMenuPage_SelectHacks,
 
     kMenuPage_NumMainPages,
 

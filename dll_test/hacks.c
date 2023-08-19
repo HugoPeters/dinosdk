@@ -58,6 +58,12 @@ void hacksUpdateMenu()
     if (menuOption("select player"))
         menuPageSetNext(kMenuPage_SelectPlayer);
 
+    if (menuOption("test flag"))
+    {
+        uint8* someFlagPtr = (uint8*)0x800b4a58;
+        *someFlagPtr = 1;
+    }
+
     menuCheckbox("show state info", &gHacks.showInfo);
     menuCheckbox("force default rendering", &gHacks.forceObjectsUseDefaultRendering);
 

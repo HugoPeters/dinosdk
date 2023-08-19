@@ -24,17 +24,5 @@ void doMenuPage_Camera()
     if (menuCheckbox("widescreen", &widescreenFlag))
         gWidescreenFlag = (uint8)widescreenFlag;
 
-    void (*setScreenWidthHeight)(int unk0, int width, int height) = 0x8005d8c0;
-
-    if (menuOption("high res"))
-    {
-        setScreenWidthHeight(0, 640, 480);
-    }
-
-    if (menuOption("normal res"))
-    {
-        setScreenWidthHeight(0, 320, 240);
-    }
-
     endMenu();
 }

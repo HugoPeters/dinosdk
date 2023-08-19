@@ -184,4 +184,17 @@ typedef PACKED_STRUCT _RawControllerStateArray
     RawControllerState states[4];
 } RawControllerStateArray;
 
+typedef PACKED_STRUCT _DLLEntryPoint
+{
+    void* exports;
+    void* dllEnd;
+} DLLEntryPoint;
+
+typedef PACKED_STRUCT _DLLInfo
+{
+    int id;
+    int numRefs;
+    DLLEntryPoint entryPoint;
+} DLLInfo;
+
 #endif // _DINO_BASE_H_

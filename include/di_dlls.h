@@ -14,21 +14,6 @@ typedef enum _DLLTypes
     // etc
 } DLLTypes;
 
-typedef struct _DLLEntryPoint
-{
-    void* exports;
-    void* dllEnd;
-} DLLEntryPoint;
-
-typedef struct _DLLInfo
-{
-    int id;
-    int numRefs;
-    DLLEntryPoint entryPoint;
-} DLLInfo;
-
-extern DLLInfo* DLL_IMPORT  dllGetLoadedList(int* outNumDLLs);
-
 inline DLLInfo* dllFind(int id)
 {
     int numDLLs = 0;
